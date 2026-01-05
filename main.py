@@ -24,15 +24,17 @@ async def init_db():
         )
         """)
         await db.execute("""
-        CREATE TABLE IF NOT EXISTS settings (
-            guild_id INTEGER PRIMARY KEY,
-            logs_channel INTEGER,
-            support_role INTEGER,
-            ticket_category INTEGER,
-            ticket_limit INTEGER DEFAULT 50,
-            panel_description TEXT DEFAULT 'Click the button below to open a ticket!'
-        )
-        """)
+CREATE TABLE IF NOT EXISTS settings (
+    guild_id INTEGER PRIMARY KEY,
+    logs_channel INTEGER,
+    support_role INTEGER,
+    ticket_category INTEGER,
+    ticket_limit INTEGER DEFAULT 50,
+    panel_description TEXT DEFAULT 'Click the button below to open a ticket!',
+    ticket_message TEXT DEFAULT '@User Your ticket has been created.'
+)
+""")
+
         await db.commit()
 
 @bot.event
