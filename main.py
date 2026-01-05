@@ -73,6 +73,17 @@ async def get_settings(guild_id):
 # ================= ADMIN COMMANDS =================
 @bot.command()
 @admin()
+async def tktmsg(ctx, *, message: str):
+    """Set custom ticket creation message"""
+    async with aiosqlite.connect(DB) as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO settings (guild_id, ticket_message) VALUES (?, ?)",
+            (ctx.guild.id, message)
+        )
+        await db.commit()
+    await ctx.send("✅ Custom ticket creation message updated!")
+@bot.command()
+@admin()
 async def setlogs(ctx, channel: discord.TextChannel):
     async with aiosqlite.connect(DB) as db:
         await db.execute("INSERT OR REPLACE INTO settings (guild_id, logs_channel) VALUES (?, ?)", (ctx.guild.id, channel.id))
@@ -161,8 +172,24 @@ class TicketView(View):
 
             # Send panel messages
             await interaction.response.send_message(f"✅ Ticket created: {channel.mention}", ephemeral=True)
-            await channel.send(f"{self.user.mention} your ticket has been created.", view=CloseView(self.user))
+            # Get custom ticket message
+cur = await db.execute(
+    "SELECT ticket_message FROM settings WHERE guild_id=?",
+    (interaction.guild.id,)
+)
+row = await cur.fetchone()
+ticket_msg = row[0] if row and row[0] else "@User Your ticket has been created."
 
+# Replace placeholders
+ticket_msg = ticket_msg.replace("@User", self.user.mention)
+
+if settings["support_role"]:
+    role = interaction.guild.get_role(settings["support_role"])
+    if role:
+        ticket_msg = ticket_msg.replace("@SupportRole", role.mention)
+
+# Send message in ticket channel
+await channel.send(ticket_msg, view=CloseView(self.user))
             # Send to logs channel
             if settings["logs_channel"]:
                 log_channel = interaction.guild.get_channel(settings["logs_channel"])
